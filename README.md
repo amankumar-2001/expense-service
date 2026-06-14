@@ -1,4 +1,4 @@
-# expense-service (a.k.a. autopay-service)
+# expense-service
 
 The KharchiBook expense + autopay backend. It owns expenses, recurring
 commitments (EMIs / subscriptions / insurance / SIPs), the salary inputs, and the
