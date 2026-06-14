@@ -19,7 +19,14 @@ func NewPostgres(cfg config.Store) (*gorm.DB, error) {
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Name, cfg.SSLMode,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	// PreferSimpleProtocol disables pgx's implicit server-side prepared
+	// statements. Required when connecting through a transaction-mode pooler
+	// (pgbouncer), which shares backend connections between clients and would
+	// otherwise hit "prepared statement name is already in use" (08P01).
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
