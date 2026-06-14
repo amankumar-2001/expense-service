@@ -1,0 +1,31 @@
+# Optional local infrastructure for expense-service.
+#
+# The normal local setup reuses auth-service's Postgres + Redis (one Postgres
+# instance hosting both the auth_service and expense_service databases, one
+# shared Redis) — see README. This compose file is only for running expense-
+# service's datastores standalone, mirroring auth-service's compose: Postgres on
+# 5432 with the `auth` role, plus a separate database `expense_service`. Redis is
+# shared, so no redis service is defined here.
+#
+#   docker compose up -d
+#   ACTIVE_ENV=dev go run ./cmd
+#
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: auth
+      POSTGRES_DB: expense_service
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth -d expense_service"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

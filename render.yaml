@@ -1,0 +1,51 @@
+# Render Blueprint for kharchibook expense-service (a.k.a. autopay-service).
+# Deploy: push to GitHub, then in Render → New → Blueprint, point at this repo.
+# Secrets (sync:false) are entered once in the Render dashboard, never in git.
+#
+# This service only VERIFIES auth-service's JWTs, so it needs only the PUBLIC key
+# (jwt_public.pem) mounted as a Render Secret File at /etc/secrets/jwt_public.pem.
+services:
+  - type: web
+    name: kharchibook-expense-service
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    branch: main
+    region: singapore            # nearest to Neon ap-southeast-1 / Upstash
+    healthCheckPath: /healthz     # liveness only — does NOT touch DB/Redis
+    autoDeploy: true
+    envVars:
+      # --- non-secret runtime config ---
+      - key: ACTIVE_ENV
+        value: prod
+      - key: SERVER_PORT
+        value: "10000"            # match Render's injected PORT
+      - key: STORE_SSLMODE
+        value: require            # Neon requires TLS
+      - key: CACHE_TLS
+        value: "true"             # Upstash requires TLS
+      - key: TOKEN_PUBLICKEYPATH
+        value: /etc/secrets/jwt_public.pem
+
+      # --- secrets: set these in the Render dashboard (Environment tab) ---
+      # Postgres (Neon) — a separate database from auth-service
+      - key: STORE_HOST
+        sync: false
+      - key: STORE_PORT
+        sync: false
+      - key: STORE_USER
+        sync: false
+      - key: STORE_PASSWORD
+        sync: false
+      - key: STORE_NAME
+        sync: false
+      # Redis (Upstash) — SHARED with auth-service. Upstash supports only DB 0;
+      # the "expense:" key prefix keeps the keyspace separate from auth-service.
+      - key: CACHE_DB
+        value: "0"
+      - key: CACHE_HOST
+        sync: false
+      - key: CACHE_PORT
+        sync: false
+      - key: CACHE_PASSWORD
+        sync: false

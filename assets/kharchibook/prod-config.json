@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "expense-service",
+    "env": "prod"
+  },
+  "server": {
+    "port": 8082,
+    "readTimeout": "10s",
+    "writeTimeout": "10s",
+    "shutdownTimeout": "30s"
+  },
+  "store": {
+    "host": "postgres.prod.internal",
+    "port": 5432,
+    "user": "expense",
+    "password": "",
+    "name": "expense_service",
+    "sslMode": "require",
+    "maxOpenConns": 100,
+    "maxIdleConns": 20,
+    "connMaxLifetime": "30m",
+    "autoMigrate": false
+  },
+  "cache": {
+    "host": "redis.prod.internal",
+    "port": 6379,
+    "password": "",
+    "db": 0,
+    "tls": true,
+    "summaryTTL": "60s"
+  },
+  "token": {
+    "issuer": "auth-service",
+    "publicKeyPath": "/etc/secrets/jwt_public.pem"
+  }
+}

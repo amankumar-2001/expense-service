@@ -1,0 +1,62 @@
+package middleware
+
+import (
+	"context"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/kharchibook/expense-service/constants"
+	apperrors "github.com/kharchibook/expense-service/errors"
+	"github.com/kharchibook/expense-service/pkg/domain/service"
+	"github.com/kharchibook/expense-service/utils"
+)
+
+// Guard holds the dependencies for the auth guard.
+type Guard struct {
+	tokens service.ITokenService
+}
+
+// NewGuard constructs the auth guard middleware factory.
+func NewGuard(tokens service.ITokenService) *Guard {
+	return &Guard{tokens: tokens}
+}
+
+// JWT verifies the Bearer access token locally (signature + expiry, no DB call)
+// using the auth-service public key, and attaches userID, roles, sessionID, and
+// verified to the request context. Tokens are minted by auth-service; this
+// service only verifies them.
+func (g *Guard) JWT(c *gin.Context) {
+	header := c.Request.Header.Get(constants.HeaderAuthorization)
+	if !strings.HasPrefix(header, constants.BearerPrefix) {
+		utils.WriteError(c.Writer, apperrors.UnauthorizedError("missing or malformed Authorization header"))
+		c.Abort()
+		return
+	}
+	raw := strings.TrimPrefix(header, constants.BearerPrefix)
+
+	claims, err := g.tokens.ParseAccessToken(raw)
+	if err != nil {
+		utils.WriteError(c.Writer, err)
+		c.Abort()
+		return
+	}
+
+	ctx := c.Request.Context()
+	ctx = context.WithValue(ctx, constants.CtxUserID, claims.UserID)
+	ctx = context.WithValue(ctx, constants.CtxSessionID, claims.SessionID)
+	ctx = context.WithValue(ctx, constants.CtxRoles, claims.Roles)
+	ctx = context.WithValue(ctx, constants.CtxVerified, claims.Verified)
+	c.Request = c.Request.WithContext(ctx)
+	c.Next()
+}
+
+// RequireVerified rejects users that have not completed OTP/email verification.
+// Place after JWT for sensitive routes.
+func (g *Guard) RequireVerified(c *gin.Context) {
+	if !utils.GetVerifiedFromContext(c.Request.Context()) {
+		utils.WriteError(c.Writer, apperrors.ForbiddenError("account verification required"))
+		c.Abort()
+		return
+	}
+	c.Next()
+}

@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "expense-service",
+    "env": "dev"
+  },
+  "server": {
+    "port": 8082,
+    "readTimeout": "10s",
+    "writeTimeout": "10s",
+    "shutdownTimeout": "15s"
+  },
+  "store": {
+    "host": "localhost",
+    "port": 5432,
+    "user": "auth",
+    "password": "auth",
+    "name": "expense_service",
+    "sslMode": "disable",
+    "maxOpenConns": 25,
+    "maxIdleConns": 5,
+    "connMaxLifetime": "30m",
+    "autoMigrate": true
+  },
+  "cache": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "db": 0,
+    "tls": false,
+    "summaryTTL": "60s"
+  },
+  "token": {
+    "issuer": "auth-service",
+    "publicKeyPath": "assets/keys/jwt_public.pem"
+  }
+}
