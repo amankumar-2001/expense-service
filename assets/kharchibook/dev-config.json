@@ -32,5 +32,25 @@
   "token": {
     "issuer": "auth-service",
     "publicKeyPath": "assets/keys/jwt_public.pem"
+  },
+  "whatsapp": {
+    "verifyToken": "dev-verify-token",
+    "appSecret": "",
+    "accessToken": "",
+    "phoneNumberID": "",
+    "graphBaseURL": "https://graph.facebook.com",
+    "graphVersion": "v21.0",
+    "signupURL": "http://localhost:3000"
+  },
+  "auth": {
+    "url": "http://localhost:8080",
+    "internalKey": ""
+  },
+  "msgQueue": {
+    "brokers": ["localhost:9092"],
+    "inboundTopic": "whatsapp.inbound",
+    "dlqTopic": "whatsapp.inbound.dlq",
+    "consumerGroup": "expense-whatsapp-worker",
+    "enabled": false
   }
 }

@@ -12,8 +12,13 @@ import (
 	"github.com/kharchibook/expense-service/config"
 	"github.com/kharchibook/expense-service/drivers"
 	"github.com/kharchibook/expense-service/pkg/domain/service"
+	whatsappsvc "github.com/kharchibook/expense-service/pkg/domain/service/whatsapp"
+	"github.com/kharchibook/expense-service/pkg/infrastructure/authclient"
 	"github.com/kharchibook/expense-service/pkg/infrastructure/cacherepo"
+	"github.com/kharchibook/expense-service/pkg/infrastructure/msgqueuerepo"
 	"github.com/kharchibook/expense-service/pkg/infrastructure/sqlrepo"
+	"github.com/kharchibook/expense-service/pkg/infrastructure/whatsappclient"
+	"github.com/kharchibook/expense-service/third_party/platlogger"
 )
 
 // InitializeApp builds the full application object graph from configuration.
@@ -44,6 +49,32 @@ func InitializeApp(cfg *config.Config) (AppInterface, error) {
 	financeSvc := service.NewFinanceService(financeRepo, summaryCache)
 	analyticsSvc := service.NewAnalyticsService(autopayRepo, financeSvc, summaryCache, cfg.Cache.SummaryTTL)
 
+	// --- WhatsApp pipeline (inbound publisher + worker orchestrator) ---
+	var publisher msgqueuerepo.IInboundPublisher
+	if cfg.MsgQueue.Enabled {
+		publisher, err = msgqueuerepo.NewKafkaPublisher(cfg.MsgQueue.Brokers, cfg.MsgQueue.InboundTopic, cfg.MsgQueue.DLQTopic)
+		if err != nil {
+			return nil, fmt.Errorf("init kafka publisher: %w", err)
+		}
+	} else {
+		platlogger.Warn("MsgQueue disabled — using stub WhatsApp publisher (local dev)")
+		publisher = msgqueuerepo.NewStubPublisher()
+	}
+
+	authClient := authclient.New(cfg.Auth.URL, cfg.Auth.InternalKey)
+	sender := whatsappclient.New(cfg.WhatsApp)
+	whatsappSvc := whatsappsvc.New(whatsappsvc.Deps{
+		Auth:      authClient,
+		Sender:    sender,
+		Publisher: publisher,
+		Redis:     rdb,
+		Expenses:  expenseSvc,
+		Autopays:  autopaySvc,
+		Analytics: analyticsSvc,
+		Finance:   financeSvc,
+		SignupURL: cfg.WhatsApp.SignupURL,
+	})
+
 	return &app{
 		cfg:          cfg,
 		tokenSvc:     tokenSvc,
@@ -51,6 +82,8 @@ func InitializeApp(cfg *config.Config) (AppInterface, error) {
 		autopaySvc:   autopaySvc,
 		financeSvc:   financeSvc,
 		analyticsSvc: analyticsSvc,
+		publisher:    publisher,
+		whatsappSvc:  whatsappSvc,
 		db:           db,
 		rdb:          rdb,
 	}, nil

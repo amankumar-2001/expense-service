@@ -10,6 +10,7 @@ import (
 	"github.com/kharchibook/expense-service/pkg/application/httpserver/v1/private-router/analytics"
 	"github.com/kharchibook/expense-service/pkg/application/httpserver/v1/private-router/autopay"
 	"github.com/kharchibook/expense-service/pkg/application/httpserver/v1/private-router/expense"
+	"github.com/kharchibook/expense-service/pkg/application/httpserver/whatsapp"
 	"github.com/kharchibook/expense-service/pkg/di"
 	"github.com/kharchibook/expense-service/utils"
 )
@@ -47,6 +48,10 @@ func NewRouter(app di.AppInterface) http.Handler {
 		}
 		utils.WriteJSON(c.Writer, http.StatusOK, map[string]string{"status": "ready"})
 	})
+
+	// Public WhatsApp webhook — authenticated by Meta's verify token (GET) and the
+	// X-Hub-Signature-256 HMAC (POST), so it sits OUTSIDE the JWT-guarded group.
+	whatsapp.NewHandler(app).Routes(r)
 
 	// V1 routes — every route requires a valid access token, so the guard is
 	// applied to the whole group.

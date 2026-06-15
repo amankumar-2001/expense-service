@@ -8,6 +8,8 @@ import (
 
 	"github.com/kharchibook/expense-service/config"
 	"github.com/kharchibook/expense-service/pkg/domain/service"
+	whatsappsvc "github.com/kharchibook/expense-service/pkg/domain/service/whatsapp"
+	"github.com/kharchibook/expense-service/pkg/infrastructure/msgqueuerepo"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
@@ -20,6 +22,10 @@ type AppInterface interface {
 	AutoPayService() service.IAutoPayService
 	FinanceService() service.IFinanceService
 	AnalyticsService() service.IAnalyticsService
+	// InboundPublisher publishes inbound WhatsApp messages (webhook ingress).
+	InboundPublisher() msgqueuerepo.IInboundPublisher
+	// WhatsAppService orchestrates the worker pipeline (consumer side).
+	WhatsAppService() *whatsappsvc.Service
 	// DB and Cache are exposed for health checks and graceful shutdown.
 	DB() *gorm.DB
 	Cache() *redis.Client
@@ -38,6 +44,8 @@ type app struct {
 	autopaySvc   service.IAutoPayService
 	financeSvc   service.IFinanceService
 	analyticsSvc service.IAnalyticsService
+	publisher    msgqueuerepo.IInboundPublisher
+	whatsappSvc  *whatsappsvc.Service
 
 	db  *gorm.DB
 	rdb *redis.Client
@@ -49,10 +57,15 @@ func (a *app) ExpenseService() service.IExpenseService     { return a.expenseSvc
 func (a *app) AutoPayService() service.IAutoPayService     { return a.autopaySvc }
 func (a *app) FinanceService() service.IFinanceService     { return a.financeSvc }
 func (a *app) AnalyticsService() service.IAnalyticsService { return a.analyticsSvc }
+func (a *app) InboundPublisher() msgqueuerepo.IInboundPublisher { return a.publisher }
+func (a *app) WhatsAppService() *whatsappsvc.Service       { return a.whatsappSvc }
 func (a *app) DB() *gorm.DB                                { return a.db }
 func (a *app) Cache() *redis.Client                        { return a.rdb }
 
 func (a *app) Close() error {
+	if a.publisher != nil {
+		_ = a.publisher.Close()
+	}
 	if a.rdb != nil {
 		_ = a.rdb.Close()
 	}

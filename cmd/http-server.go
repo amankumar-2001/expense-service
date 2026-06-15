@@ -1,6 +1,12 @@
+//go:build !worker
+
 // Command http-server is the expense-service entry point. It loads configuration,
 // builds the dependency graph, starts the HTTP server, and shuts down gracefully
 // on SIGINT/SIGTERM.
+//
+// The WhatsApp Kafka consumer is a separate binary built from the same cmd
+// package with `-tags worker` (see whatsapp-worker.go); the build tags keep their
+// main() functions from colliding.
 package main
 
 import (

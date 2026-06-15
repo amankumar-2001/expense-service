@@ -5,11 +5,14 @@ import "time"
 // Config is the root configuration object loaded from the active env JSON file
 // (overlaid with environment variables via Viper).
 type Config struct {
-	App    App    `mapstructure:"app"`
-	Server Server `mapstructure:"server"`
-	Store  Store  `mapstructure:"store"`
-	Cache  Cache  `mapstructure:"cache"`
-	Token  Token  `mapstructure:"token"`
+	App      App      `mapstructure:"app"`
+	Server   Server   `mapstructure:"server"`
+	Store    Store    `mapstructure:"store"`
+	Cache    Cache    `mapstructure:"cache"`
+	Token    Token    `mapstructure:"token"`
+	WhatsApp WhatsApp `mapstructure:"whatsapp"`
+	Auth     Auth     `mapstructure:"auth"`
+	MsgQueue MsgQueue `mapstructure:"msgQueue"`
 }
 
 // App holds high-level service metadata.
@@ -64,4 +67,40 @@ type Token struct {
 	Issuer        string `mapstructure:"issuer"`
 	PublicKeyPath string `mapstructure:"publicKeyPath"`
 	PublicKeyPEM  string `mapstructure:"publicKeyPEM"`
+}
+
+// WhatsApp holds Meta Cloud API settings for the inbound webhook (verification +
+// signature) and the outbound message client. Secrets come from env overrides.
+type WhatsApp struct {
+	// VerifyToken is echoed back during Meta's GET webhook handshake.
+	VerifyToken string `mapstructure:"verifyToken"`
+	// AppSecret signs inbound payloads (X-Hub-Signature-256, HMAC-SHA256).
+	AppSecret string `mapstructure:"appSecret"`
+	// AccessToken authorizes outbound sends to the Graph API.
+	AccessToken string `mapstructure:"accessToken"`
+	// PhoneNumberID is the sender's Cloud API phone-number id.
+	PhoneNumberID string `mapstructure:"phoneNumberID"`
+	// GraphBaseURL + GraphVersion build the send endpoint; defaulted in config.
+	GraphBaseURL string `mapstructure:"graphBaseURL"`
+	GraphVersion string `mapstructure:"graphVersion"`
+	// SignupURL is shown to unregistered senders.
+	SignupURL string `mapstructure:"signupURL"`
+}
+
+// Auth holds the auth-service base URL and the shared internal key used to call
+// its /v1/internal routes (phone → user lookup).
+type Auth struct {
+	URL         string `mapstructure:"url"`
+	InternalKey string `mapstructure:"internalKey"`
+}
+
+// MsgQueue holds Kafka settings for the async WhatsApp pipeline. When Enabled is
+// false the ingress/worker fall back to a logging stub so local dev needs no
+// broker.
+type MsgQueue struct {
+	Brokers       []string `mapstructure:"brokers"`
+	InboundTopic  string   `mapstructure:"inboundTopic"`
+	DLQTopic      string   `mapstructure:"dlqTopic"`
+	ConsumerGroup string   `mapstructure:"consumerGroup"`
+	Enabled       bool     `mapstructure:"enabled"`
 }

@@ -1,4 +1,4 @@
-.PHONY: help build run run-prod test vet tidy infra-up infra-down clean
+.PHONY: help build build-worker run run-worker run-prod test vet tidy infra-up infra-down clean
 
 ACTIVE_ENV ?= dev
 
@@ -8,8 +8,14 @@ help: ## Show this help
 build: ## Build the server binary
 	go build -o bin/expense-server ./cmd
 
+build-worker: ## Build the WhatsApp Kafka consumer binary
+	go build -tags worker -o bin/whatsapp-worker ./cmd
+
 run: ## Run the server (ACTIVE_ENV defaults to dev)
 	ACTIVE_ENV=$(ACTIVE_ENV) go run ./cmd
+
+run-worker: ## Run the WhatsApp worker (requires Kafka; set MSGQUEUE_ENABLED=true)
+	ACTIVE_ENV=$(ACTIVE_ENV) MSGQUEUE_ENABLED=true go run -tags worker ./cmd
 
 run-prod: ## Run prod-mode locally (release mode) against brew PG/Redis + db expense_service_prod
 	ACTIVE_ENV=prod \

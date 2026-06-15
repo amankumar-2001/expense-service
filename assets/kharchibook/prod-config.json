@@ -32,5 +32,25 @@
   "token": {
     "issuer": "auth-service",
     "publicKeyPath": "/etc/secrets/jwt_public.pem"
+  },
+  "whatsapp": {
+    "verifyToken": "",
+    "appSecret": "",
+    "accessToken": "",
+    "phoneNumberID": "",
+    "graphBaseURL": "https://graph.facebook.com",
+    "graphVersion": "v21.0",
+    "signupURL": "https://app.kharchibook.com"
+  },
+  "auth": {
+    "url": "http://auth-service.prod.internal:8080",
+    "internalKey": ""
+  },
+  "msgQueue": {
+    "brokers": ["kafka.prod.internal:9092"],
+    "inboundTopic": "whatsapp.inbound",
+    "dlqTopic": "whatsapp.inbound.dlq",
+    "consumerGroup": "expense-whatsapp-worker",
+    "enabled": true
   }
 }

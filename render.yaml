@@ -49,3 +49,73 @@ services:
         sync: false
       - key: CACHE_PASSWORD
         sync: false
+      # WhatsApp Cloud API (Meta) — the web service only needs the inbound
+      # verify token + app secret (handshake + signature). It publishes to Kafka.
+      - key: WHATSAPP_VERIFYTOKEN
+        sync: false
+      - key: WHATSAPP_APPSECRET
+        sync: false
+      # Auth-service internal lookup (phone → user). URL is in-cluster.
+      - key: AUTH_URL
+        sync: false
+      - key: AUTH_INTERNALKEY
+        sync: false
+      # Kafka (inbound stream). Brokers are comma-free JSON in config; the env
+      # override sets a single broker list string per Render conventions.
+      - key: MSGQUEUE_ENABLED
+        value: "true"
+      - key: MSGQUEUE_BROKERS
+        sync: false
+
+  # Background worker: consumes whatsapp.inbound and runs the orchestration
+  # pipeline. Same image; overrides the entrypoint to the worker binary.
+  - type: worker
+    name: kharchibook-whatsapp-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: /app/whatsapp-worker
+    plan: free
+    branch: main
+    region: singapore
+    autoDeploy: true
+    envVars:
+      - key: ACTIVE_ENV
+        value: prod
+      - key: STORE_SSLMODE
+        value: require
+      - key: CACHE_TLS
+        value: "true"
+      - key: TOKEN_PUBLICKEYPATH
+        value: /etc/secrets/jwt_public.pem
+      - key: STORE_HOST
+        sync: false
+      - key: STORE_PORT
+        sync: false
+      - key: STORE_USER
+        sync: false
+      - key: STORE_PASSWORD
+        sync: false
+      - key: STORE_NAME
+        sync: false
+      - key: CACHE_DB
+        value: "0"
+      - key: CACHE_HOST
+        sync: false
+      - key: CACHE_PORT
+        sync: false
+      - key: CACHE_PASSWORD
+        sync: false
+      # WhatsApp Cloud API — the worker sends replies, so it needs the access
+      # token + phone-number id (plus the app secret is unused here).
+      - key: WHATSAPP_ACCESSTOKEN
+        sync: false
+      - key: WHATSAPP_PHONENUMBERID
+        sync: false
+      - key: AUTH_URL
+        sync: false
+      - key: AUTH_INTERNALKEY
+        sync: false
+      - key: MSGQUEUE_ENABLED
+        value: "true"
+      - key: MSGQUEUE_BROKERS
+        sync: false

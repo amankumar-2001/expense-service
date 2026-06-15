@@ -8,6 +8,11 @@ const (
 	HeaderUserAgent     = "User-Agent"
 	HeaderForwardedFor  = "X-Forwarded-For"
 	HeaderRealIP        = "X-Real-Ip"
+	// HeaderInternalKey carries the shared secret for calls to auth-service's
+	// /v1/internal routes (phone → user lookup).
+	HeaderInternalKey = "X-Internal-Key"
+	// HeaderHubSignature is Meta's HMAC-SHA256 signature over the raw webhook body.
+	HeaderHubSignature = "X-Hub-Signature-256"
 )
 
 // Context keys for values stored by middleware. Using a dedicated type avoids
