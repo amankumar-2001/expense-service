@@ -19,6 +19,9 @@ import (
 // invalidates the cached committed-money summary for that user.
 type IAutoPayService interface {
 	Create(ctx context.Context, userID int64, req request.CreateAutoPayRequest) (*response.AutoPayResponse, error)
+	// CreateDetected stores a mailbox-detected commitment as a pending
+	// (source="email_auto", status="inactive") entry awaiting user confirmation.
+	CreateDetected(ctx context.Context, userID int64, req request.CreateDetectedAutoPayRequest) (*response.AutoPayResponse, error)
 	List(ctx context.Context, userID int64, status, typ string) ([]response.AutoPayResponse, error)
 	Update(ctx context.Context, userID, id int64, req request.UpdateAutoPayRequest) (*response.AutoPayResponse, error)
 	Delete(ctx context.Context, userID, id int64) error
@@ -50,6 +53,27 @@ func (s *autopayService) Create(ctx context.Context, userID int64, req request.C
 		return nil, err
 	}
 	s.invalidate(ctx, userID)
+	out := toAutoPayResponse(a)
+	return &out, nil
+}
+
+func (s *autopayService) CreateDetected(ctx context.Context, userID int64, req request.CreateDetectedAutoPayRequest) (*response.AutoPayResponse, error) {
+	a := &dao.AutoPay{
+		UserID:          userID,
+		Name:            req.Name,
+		Type:            req.Type,
+		Amount:          req.Amount,
+		DeductDay:       req.DeductDay,
+		Source:          autopaysource.EmailAuto.String(),
+		Status:          autopaystatus.Inactive.String(),
+		ConfidenceScore: req.ConfidenceScore,
+		Notes:           req.Notes,
+	}
+	if err := s.repo.Create(ctx, a); err != nil {
+		return nil, err
+	}
+	// A pending (inactive) detection doesn't change committed money, so no cache
+	// invalidation is needed until it's confirmed.
 	out := toAutoPayResponse(a)
 	return &out, nil
 }

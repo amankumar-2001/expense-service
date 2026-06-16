@@ -46,6 +46,9 @@
     "url": "http://localhost:8080",
     "internalKey": ""
   },
+  "internal": {
+    "apiKey": ""
+  },
   "msgQueue": {
     "brokers": ["localhost:9092"],
     "inboundTopic": "whatsapp.inbound",

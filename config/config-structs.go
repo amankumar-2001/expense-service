@@ -12,7 +12,16 @@ type Config struct {
 	Token    Token    `mapstructure:"token"`
 	WhatsApp WhatsApp `mapstructure:"whatsapp"`
 	Auth     Auth     `mapstructure:"auth"`
+	Internal Internal `mapstructure:"internal"`
 	MsgQueue MsgQueue `mapstructure:"msgQueue"`
+}
+
+// Internal holds service-to-service settings: the shared secret guarding this
+// service's own /v1/internal routes (e.g. the mcp-gateway's autopay calls). It
+// is a secret supplied via the INTERNAL_APIKEY env override — never committed —
+// and must match the caller's configured key.
+type Internal struct {
+	APIKey string `mapstructure:"apiKey"`
 }
 
 // App holds high-level service metadata.

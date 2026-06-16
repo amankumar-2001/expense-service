@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kharchibook/expense-service/middleware"
+	internalautopay "github.com/kharchibook/expense-service/pkg/application/httpserver/v1/internal-router/autopay"
 	"github.com/kharchibook/expense-service/pkg/application/httpserver/v1/private-router/analytics"
 	"github.com/kharchibook/expense-service/pkg/application/httpserver/v1/private-router/autopay"
 	"github.com/kharchibook/expense-service/pkg/application/httpserver/v1/private-router/expense"
@@ -36,6 +37,12 @@ func NewRouter(app di.AppInterface) http.Handler {
 	r.Use(middleware.CORS())
 
 	guard := middleware.NewGuard(app.TokenService())
+
+	// Service-to-service routes, authenticated by the shared internal key (NOT a
+	// user JWT). The mcp-gateway calls these on behalf of the Gmail-linked user it
+	// was configured with. Mounted outside the JWT-guarded /v1 group below.
+	internal := r.Group("/v1/internal", guard.ServiceAuth(app.Config().Internal.APIKey))
+	internalautopay.NewHandler(app).Routes(internal)
 
 	// Liveness/readiness.
 	r.GET("/healthz", func(c *gin.Context) {

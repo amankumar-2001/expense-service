@@ -46,6 +46,9 @@
     "url": "http://auth-service.prod.internal:8080",
     "internalKey": ""
   },
+  "internal": {
+    "apiKey": ""
+  },
   "msgQueue": {
     "brokers": ["kafka.prod.internal:9092"],
     "inboundTopic": "whatsapp.inbound",
